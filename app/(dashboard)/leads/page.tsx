@@ -91,40 +91,42 @@ function LeadsContent() {
   };
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="mx-auto max-w-[1500px] space-y-5 pb-20 lg:pb-2">
+      <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-black text-[#0F0F1A]">Leads</h1>
-          <p className="text-[#9090A8] text-sm">{total} total</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#e6531c]">Customer pipeline</p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-[#191b23]">Leads</h1>
+          <p className="mt-1 text-sm text-[#777d89]">{total.toLocaleString("en-IN")} total enquiries</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 bg-[#E8540A] hover:bg-[#c94508] text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors">
-          <Plus size={16} /> Add Lead
+        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 rounded-xl bg-[#f15a24] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#dd4e1b]">
+          <Plus size={16} /> Add lead
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#E4E5EF] p-4 flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 rounded-2xl border border-[#e7e9ed] bg-white p-3.5 shadow-[0_2px_8px_rgba(24,28,40,0.025)] sm:p-4">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9090A8]" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9096a2]" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, mobile, lead ID..."
-            className="w-full pl-9 pr-3 py-2.5 border-[1.5px] border-[#E4E5EF] rounded-xl text-sm focus:border-[#E8540A] outline-none" />
+            className="w-full rounded-xl border border-[#e1e3e8] bg-[#fbfbfc] py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-[#f15a24] focus:bg-white focus:ring-4 focus:ring-[#f15a24]/10" />
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          className="border-[1.5px] border-[#E4E5EF] rounded-xl px-3 py-2.5 text-sm focus:border-[#E8540A] outline-none bg-white">
+          className="rounded-xl border border-[#e1e3e8] bg-white px-3 py-2.5 text-sm text-[#454b58] outline-none transition focus:border-[#f15a24] focus:ring-4 focus:ring-[#f15a24]/10">
           <option value="">All Status</option>
           {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#E4E5EF] overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-[#e7e9ed] bg-white shadow-[0_2px_8px_rgba(24,28,40,0.025)]">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-[#9090A8]"><Loader2 size={20} className="animate-spin" /></div>
+          <div className="flex items-center justify-center py-16 text-[#9096a2]"><Loader2 size={20} className="animate-spin text-[#f15a24]" /></div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-[#9090A8] text-sm">No leads found</div>
+          <div className="py-16 text-center text-sm text-[#858b97]">No leads found</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[#F8F9FC] border-b border-[#E4E5EF] text-left text-[10px] font-bold uppercase tracking-widest text-[#9090A8]">
+          <div className="table-scroll max-h-[60dvh] min-h-[280px] overflow-auto">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b border-[#e8e9ed] bg-[#f7f8fa] text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[#818794]">
+                  <th className="w-20 px-4 py-3">S.No</th>
                   <th className="px-4 py-3">Lead</th>
                   <th className="px-4 py-3">Mobile</th>
                   <th className="px-4 py-3">Source</th>
@@ -138,10 +140,11 @@ function LeadsContent() {
                   const badge = STATUS_COLORS[l.status] || defaultBadge;
                   return (
                     <tr key={l._id} onClick={() => router.push(`/leads/${l._id}`)}
-                      className={`border-b border-[#E4E5EF] hover:bg-[#FFF3ED] cursor-pointer transition-colors ${i % 2 === 1 ? "bg-[#F8F9FC]/50" : ""}`}>
+                      className={`cursor-pointer border-b border-[#eff0f3] transition-colors hover:bg-[#fff5ef] ${i % 2 === 1 ? "bg-[#fafbfc]" : "bg-white"}`}>
+                      <td className="px-4 py-3"><span className="serial-number">{i + 1}</span></td>
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-[#0F0F1A]">{l.name}</p>
-                        <p className="text-[#9090A8] text-xs font-mono">{l.leadCode}</p>
+                        <p className="font-bold text-[#262a34]">{l.name}</p>
+                        <p className="mt-0.5 font-mono text-[11px] text-[#9297a2]">{l.leadCode}</p>
                       </td>
                       <td className="px-4 py-3 text-[#4A4A6A]">{l.mobile}</td>
                       <td className="px-4 py-3 text-[#4A4A6A] text-xs">{l.source}</td>
@@ -161,9 +164,9 @@ function LeadsContent() {
 
       {pages > 1 && (
         <div className="flex items-center justify-center gap-3 text-sm">
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1.5 rounded-lg border border-[#E4E5EF] disabled:opacity-40">Prev</button>
-          <span className="text-[#4A4A6A]">Page {page} of {pages}</span>
-          <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1.5 rounded-lg border border-[#E4E5EF] disabled:opacity-40">Next</button>
+          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-xl border border-[#e1e3e8] bg-white px-3.5 py-2 font-semibold text-[#555b68] transition hover:border-[#f15a24]/50 disabled:opacity-40">Previous</button>
+          <span className="text-xs font-semibold text-[#747987]">Page {page} of {pages}</span>
+          <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="rounded-xl border border-[#e1e3e8] bg-white px-3.5 py-2 font-semibold text-[#555b68] transition hover:border-[#f15a24]/50 disabled:opacity-40">Next</button>
         </div>
       )}
 

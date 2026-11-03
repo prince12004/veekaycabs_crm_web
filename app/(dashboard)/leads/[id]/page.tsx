@@ -20,6 +20,7 @@ const ESCALATION = [
   "Not Interested", "Customer Issue", "Price Issue", "Payment Issue",
   "Service Issue", "Service Unavailable", "Other Issue",
 ];
+const SUPER_ADMIN_REVIEW = [...ESCALATION, "Interested"];
 const REASON_REQUIRED = [...ESCALATION, "Lost"];
 
 interface SalespersonOption { _id: string; name: string; isActive: boolean; role: string; }
@@ -68,11 +69,15 @@ export default function LeadDetailPage() {
     }
     setSavingStatus(true);
     try {
-      await leadsApi.update(id, { status: newStatus, reason });
-      // The server has just moved an escalated lead to Super Admin, so a
+      const { data } = await leadsApi.update(id, { status: newStatus, reason });
+      // The server has just moved the lead to Super Admin, so a
       // salesperson can no longer open it — go back to their list instead.
-      if (user?.role !== "super_admin" && ESCALATION.includes(newStatus)) {
-        toast.success("Lead sent to Super Admin for review");
+      if (user?.role !== "super_admin" && SUPER_ADMIN_REVIEW.includes(newStatus)) {
+        if (newStatus === "Interested" && !data.notification?.sent) {
+          toast.error("Lead moved to Super Admin, but the WhatsApp alert could not be sent");
+        } else {
+          toast.success("Lead sent to Super Admin for review");
+        }
         router.push("/leads");
         return;
       }
@@ -124,10 +129,10 @@ export default function LeadDetailPage() {
     return <div className="flex items-center justify-center py-20"><Loader2 size={24} className="animate-spin text-[#E8540A]" /></div>;
   }
 
-  const slaActive = lead.assignedTo && !lead.firstActionAt && lead.status !== "Booking Confirmed" && ![...ESCALATION, "Lost", "Cancelled"].includes(lead.status);
+  const slaActive = lead.assignedTo && !lead.firstActionAt && lead.status !== "Booking Confirmed" && ![...SUPER_ADMIN_REVIEW, "Lost", "Cancelled"].includes(lead.status);
 
   return (
-    <div className="p-6 space-y-5 max-w-5xl">
+    <div className="crm-detail-theme mx-auto min-h-full w-full max-w-none space-y-5 pb-20 lg:pb-2">
       <button onClick={() => router.push("/leads")} className="flex items-center gap-1.5 text-sm text-[#4A4A6A] hover:text-[#E8540A]">
         <ArrowLeft size={15} /> Back to Leads
       </button>
@@ -182,7 +187,7 @@ export default function LeadDetailPage() {
             <div className="flex gap-2">
               <input value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Add a note..."
                 className="flex-1 border-[1.5px] border-[#E4E5EF] focus:border-[#E8540A] rounded-xl px-3 py-2 text-sm outline-none" />
-              <button onClick={() => handleActivity("note")} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0F0F1A] text-white text-xs font-bold">
+              <button onClick={() => handleActivity("note")} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E8540A] text-white text-xs font-bold transition-colors hover:bg-[#c94508]">
                 <StickyNote size={13} /> Add
               </button>
             </div>
@@ -194,9 +199,9 @@ export default function LeadDetailPage() {
               <p className="text-[#9090A8] text-sm">No activity yet.</p>
             ) : (
               <div className="space-y-3">
-                {activities.map((a) => (
+                {activities.map((a, index) => (
                   <div key={a._id} className="flex gap-3 text-sm border-b border-[#F1F2F7] pb-3 last:border-0">
-                    <div className="w-2 h-2 rounded-full bg-[#E8540A] mt-1.5 shrink-0" />
+                    <span className="serial-number shrink-0">{index + 1}</span>
                     <div>
                       <p className="text-[#0F0F1A]">{a.message || a.type}</p>
                       <p className="text-[#9090A8] text-xs">{a.by?.name || "System"} · {new Date(a.createdAt).toLocaleString("en-IN")}</p>
@@ -225,7 +230,7 @@ export default function LeadDetailPage() {
             <h3 className="font-bold text-[#0F0F1A] text-sm mb-3">Next Follow-up</h3>
             <input type="datetime-local" value={followUp} onChange={(e) => setFollowUp(e.target.value)}
               className="w-full border-[1.5px] border-[#E4E5EF] focus:border-[#E8540A] rounded-xl px-3 py-2 text-sm outline-none mb-2" />
-            <button onClick={handleFollowUpSave} className="w-full py-2 rounded-xl bg-[#0F0F1A] text-white text-xs font-bold">Save</button>
+            <button onClick={handleFollowUpSave} className="w-full py-2 rounded-xl bg-[#E8540A] text-white text-xs font-bold transition-colors hover:bg-[#c94508]">Save</button>
           </div>
 
           <div className="bg-white rounded-2xl border border-[#E4E5EF] p-5">
@@ -234,11 +239,11 @@ export default function LeadDetailPage() {
               <p className="text-[#9090A8] text-xs">No previous leads or bookings for this number.</p>
             ) : (
               <div className="space-y-2 text-xs">
-                {otherLeads.map((l) => (
-                  <p key={l._id} className="text-[#4A4A6A]">Lead {l.leadCode} — {l.status} ({new Date(l.createdAt).toLocaleDateString("en-IN")})</p>
+                {otherLeads.map((l, index) => (
+                  <p key={l._id} className="flex items-center gap-2 text-[#4A4A6A]"><span className="serial-number">{index + 1}</span><span>Lead {l.leadCode} — {l.status} ({new Date(l.createdAt).toLocaleDateString("en-IN")})</span></p>
                 ))}
-                {pastBookings.map((b) => (
-                  <p key={b._id} className="text-[#065F46] font-semibold">Booking {b.bookingId} — Rs. {b.totalAmount?.toLocaleString("en-IN")}</p>
+                {pastBookings.map((b, index) => (
+                  <p key={b._id} className="flex items-center gap-2 font-semibold text-[#065F46]"><span className="serial-number">{index + 1}</span><span>Booking {b.bookingId} — Rs. {b.totalAmount?.toLocaleString("en-IN")}</span></p>
                 ))}
               </div>
             )}

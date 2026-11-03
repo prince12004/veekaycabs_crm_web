@@ -57,24 +57,27 @@ export default function SalespersonsPage() {
   };
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-[1500px] space-y-5 pb-20 lg:pb-2">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-[#0F0F1A]">Salespersons</h1>
-          <p className="text-[#9090A8] text-sm">{users.length} CRM users</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#e6531c]">Team management</p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-[#191b23]">Salespersons</h1>
+          <p className="mt-1 text-sm text-[#777d89]">{users.length} CRM team members</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 bg-[#E8540A] hover:bg-[#c94508] text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors">
-          <Plus size={16} /> Add User
+        <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 rounded-xl bg-[#f15a24] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#dd4e1b]">
+          <Plus size={16} /> Add team member
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#E4E5EF] overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-[#e7e9ed] bg-white shadow-[0_2px_8px_rgba(24,28,40,0.025)]">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-[#9090A8]"><Loader2 size={20} className="animate-spin" /></div>
+          <div className="flex items-center justify-center py-16 text-[#9096a2]"><Loader2 size={20} className="animate-spin text-[#f15a24]" /></div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="table-scroll max-h-[60dvh] overflow-auto">
+          <table className="w-full min-w-[760px] text-sm">
             <thead>
-              <tr className="bg-[#F8F9FC] border-b border-[#E4E5EF] text-left text-[10px] font-bold uppercase tracking-widest text-[#9090A8]">
+              <tr className="sticky top-0 z-10 border-b border-[#e8e9ed] bg-[#f7f8fa] text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[#818794]">
+                <th className="w-20 px-4 py-3">S.No</th>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Role</th>
@@ -85,8 +88,9 @@ export default function SalespersonsPage() {
             </thead>
             <tbody>
               {users.map((u, i) => (
-                <tr key={u._id} className={`border-b border-[#E4E5EF] ${i % 2 === 1 ? "bg-[#F8F9FC]/50" : ""}`}>
-                  <td className="px-4 py-3 font-semibold text-[#0F0F1A]">{u.name}</td>
+                <tr key={u._id} className={`border-b border-[#eff0f3] ${i % 2 === 1 ? "bg-[#fafbfc]" : "bg-white"}`}>
+                  <td className="px-4 py-3"><span className="serial-number">{i + 1}</span></td>
+                  <td className="px-4 py-3 font-bold text-[#262a34]">{u.name}</td>
                   <td className="px-4 py-3 text-[#4A4A6A]">{u.email}</td>
                   <td className="px-4 py-3 text-[#4A4A6A] capitalize">{u.role.replace("_", " ")}</td>
                   <td className="px-4 py-3 text-[#4A4A6A]">{u.openLeadCount}</td>
@@ -104,6 +108,7 @@ export default function SalespersonsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

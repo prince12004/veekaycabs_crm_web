@@ -1,6 +1,11 @@
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5050";
+// NEXT_PUBLIC_API_URL is baked in at build time. A live build made without it,
+// or with a local .env still pointing at localhost, must reach the live API.
+const LIVE_API_URL = "https://crm-api.veekaycabs.com";
+const BUILD_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5050";
+const onLiveSite = typeof window !== "undefined" && window.location.hostname.endsWith("veekaycabs.com");
+const API_URL = onLiveSite && /localhost|127\.0\.0\.1/.test(BUILD_API_URL) ? LIVE_API_URL : BUILD_API_URL;
 
 export const api = axios.create({ baseURL: API_URL });
 

@@ -3,12 +3,11 @@
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Search, X, Loader2, Tags } from "lucide-react";
+import { Plus, Search, X, Loader2, Tags, Phone, ChevronRight, UserRound } from "lucide-react";
 import toast from "react-hot-toast";
 import { leadsApi, leadTypesApi } from "@/lib/api";
 import { isSuperAdmin } from "@/lib/auth";
 import { ACTIVE_STATUSES, SOURCES, STATUS_COLORS, defaultBadge } from "@/lib/leadOptions";
-import LeadTypeSelect from "@/components/LeadTypeSelect";
 import LeadTypesManager, { type LeadTypeRow } from "@/components/LeadTypesManager";
 
 // Lost leads have their own Super Admin section, so they aren't offered here.
@@ -162,7 +161,54 @@ function LeadsContent() {
         ) : leads.length === 0 ? (
           <div className="py-16 text-center text-sm text-[#858b97]">No leads found</div>
         ) : (
-          <div className="table-scroll max-h-[60dvh] min-h-[280px] overflow-auto">
+          <>
+          {/* Phones get a card list; the wide table starts at tablet width. */}
+          <ul className="divide-y divide-[#eff0f3] md:hidden">
+            {leads.map((l, i) => {
+              const badge = STATUS_COLORS[l.status] || defaultBadge;
+              return (
+                <li key={l._id}>
+                  <div role="link" tabIndex={0} onClick={() => router.push(`/leads/${l._id}`)}
+                    onKeyDown={(e) => { if (e.key === "Enter") router.push(`/leads/${l._id}`); }}
+                    className="block cursor-pointer px-4 py-4 transition-colors active:bg-[#fff5ef]">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="serial-number mt-0.5 shrink-0">{(page - 1) * PAGE_SIZE + i + 1}</span>
+                        <div className="min-w-0">
+                          <p className="truncate font-bold text-[#262a34]">{l.name}</p>
+                          <p className="mt-0.5 font-mono text-[11px] text-[#9297a2]">
+                            {l.leadCode} · {new Date(l.createdAt).toLocaleDateString("en-IN")}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ backgroundColor: badge.bg, color: badge.text }}>
+                        {l.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-3 pl-11">
+                      <a href={`tel:${l.mobile}`} onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-[#f5f6f8] px-2.5 py-1.5 text-sm font-semibold text-[#363b47]">
+                        <Phone size={13} className="text-[#31945c]" /> {l.mobile}
+                      </a>
+                      <ChevronRight size={18} className="shrink-0 text-[#b3b7c0]" />
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-1.5 pl-11 text-[11px] font-semibold">
+                      <span className="rounded-md border border-[#e7e9ed] px-2 py-0.5 text-[#626878]">{l.source}</span>
+                      <span className={`rounded-md border px-2 py-0.5 ${l.leadType ? "border-[#f15a24]/25 bg-[#fff5ef] text-[#c24714]" : "border-dashed border-[#d9dce2] text-[#9ca1ab]"}`}>
+                        {l.leadType || "Type not set"}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-md border border-[#e7e9ed] px-2 py-0.5 text-[#626878]">
+                        <UserRound size={11} /> {l.assignedTo?.name || "Unassigned"}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="table-scroll hidden max-h-[60dvh] min-h-[280px] overflow-auto md:block">
             <table className="w-full min-w-[900px] text-sm">
               <thead className="sticky top-0 z-10">
                 <tr className="border-b border-[#e8e9ed] bg-[#f7f8fa] text-left text-[10px] font-bold uppercase tracking-[0.14em] text-[#818794]">
@@ -190,16 +236,10 @@ function LeadsContent() {
                       <td className="px-4 py-3 text-[#4A4A6A]">{l.mobile}</td>
                       <td className="px-4 py-3 text-[#4A4A6A] text-xs">{l.source}</td>
                       <td className="px-4 py-3">
-                        <LeadTypeSelect
-                          leadId={l._id}
-                          value={l.leadType}
-                          types={leadTypes}
-                          onSaved={(leadType) => {
-                            setLeads((rows) => rows.map((r) => (r._id === l._id ? { ...r, leadType } : r)));
-                            loadLeadTypes();
-                          }}
-                          className="w-40 rounded-lg border border-[#e1e3e8] bg-white px-2 py-1.5 text-xs text-[#363b47] outline-none transition hover:border-[#f15a24]/50 focus:border-[#f15a24]"
-                        />
+                        {/* Read-only here; it's changed from the lead's own page. */}
+                        {l.leadType
+                          ? <span className="text-xs font-semibold text-[#363b47]">{l.leadType}</span>
+                          : <span className="text-xs text-[#b3b7c0]">Not set</span>}
                       </td>
                       <td className="px-4 py-3 text-[#4A4A6A] text-xs">{l.assignedTo?.name || "Unassigned"}</td>
                       <td className="px-4 py-3">
@@ -212,6 +252,7 @@ function LeadsContent() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

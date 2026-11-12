@@ -42,6 +42,7 @@ function LeadsContent() {
   const [typeRows, setTypeRows] = useState<LeadTypeRow[]>([]);
   const leadTypes = typeRows.map((t) => t.name);
   const [showTypes, setShowTypes] = useState(false);
+  const [typesEditable, setTypesEditable] = useState(true);
   const [canManageTypes, setCanManageTypes] = useState(false);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
@@ -54,7 +55,9 @@ function LeadsContent() {
   const [submitting, setSubmitting] = useState(false);
 
   const loadLeadTypes = useCallback(() => {
-    leadTypesApi.getAll().then(({ data }) => setTypeRows(data.data || [])).catch(() => {});
+    leadTypesApi.getAll()
+      .then(({ data }) => { setTypeRows(data.data || []); setTypesEditable(data.editable !== false); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => { loadLeadTypes(); setCanManageTypes(isSuperAdmin()); }, [loadLeadTypes]);
@@ -319,6 +322,7 @@ function LeadsContent() {
       {showTypes && (
         <LeadTypesManager
           types={typeRows}
+          editable={typesEditable}
           onChanged={() => { loadLeadTypes(); load(); }}
           onClose={() => setShowTypes(false)}
         />

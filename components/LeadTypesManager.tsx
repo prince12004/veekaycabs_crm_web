@@ -5,10 +5,11 @@ import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { leadTypesApi } from "@/lib/api";
 
-export interface LeadTypeRow { _id: string; name: string; leadCount: number }
+export interface LeadTypeRow { _id: string | null; name: string; leadCount: number }
 
 interface Props {
   types: LeadTypeRow[];
+  editable: boolean;
   onChanged: () => void;
   onClose: () => void;
 }
@@ -16,7 +17,7 @@ interface Props {
 const inputCls = "w-full rounded-xl border border-[#e1e3e8] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#f15a24] focus:ring-4 focus:ring-[#f15a24]/10";
 
 // Super Admin's editor for the Lead Type categories.
-export default function LeadTypesManager({ types, onChanged, onClose }: Props) {
+export default function LeadTypesManager({ types, editable, onChanged, onClose }: Props) {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -47,13 +48,13 @@ export default function LeadTypesManager({ types, onChanged, onClose }: Props) {
   const rename = async (t: LeadTypeRow) => {
     const name = editName.trim();
     if (!name || name === t.name) { setEditingId(null); return; }
-    if (await run(() => leadTypesApi.update(t._id, name), `Renamed to ${name}`)) setEditingId(null);
+    if (await run(() => leadTypesApi.update(t._id as string, name), `Renamed to ${name}`)) setEditingId(null);
   };
 
   const remove = (t: LeadTypeRow) => {
     const note = t.leadCount ? ` ${t.leadCount} lead(s) already tagged keep showing it.` : "";
     if (!confirm(`Remove "${t.name}" from the Lead Type list?${note}`)) return;
-    run(() => leadTypesApi.remove(t._id), `${t.name} removed`);
+    run(() => leadTypesApi.remove(t._id as string), `${t.name} removed`);
   };
 
   return (
@@ -67,17 +68,23 @@ export default function LeadTypesManager({ types, onChanged, onClose }: Props) {
           <button onClick={onClose} aria-label="Close" className="text-[#9090A8] hover:text-[#0F0F1A]"><X size={20} /></button>
         </div>
 
-        <form onSubmit={add} className="flex gap-2">
+        {!editable && (
+          <p className="rounded-xl border border-[#fde2b8] bg-[#fff8ec] px-3 py-2.5 text-xs leading-5 text-[#8a5a12]">
+            These default types can be used on leads, but the list can&apos;t be edited until the CRM database user is given access to the <code>crm_lead_types</code> collection.
+          </p>
+        )}
+
+        {editable && <form onSubmit={add} className="flex gap-2">
           <input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60} placeholder="New lead type" className={inputCls} />
           <button type="submit" disabled={busy || !newName.trim()} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#f15a24] px-3.5 text-sm font-bold text-white transition hover:bg-[#dd4e1b] disabled:opacity-50">
             <Plus size={15} /> Add
           </button>
-        </form>
+        </form>}
 
         <div className="max-h-[50dvh] divide-y divide-[#f0f1f3] overflow-y-auto rounded-xl border border-[#e7e9ed]">
           {types.length === 0 && <p className="px-3 py-6 text-center text-sm text-[#858b97]">No lead types yet.</p>}
           {types.map((t) => (
-            <div key={t._id} className="flex items-center gap-2 px-3 py-2.5">
+            <div key={t._id || t.name} className="flex items-center gap-2 px-3 py-2.5">
               {editingId === t._id ? (
                 <>
                   <input autoFocus value={editName} maxLength={60} onChange={(e) => setEditName(e.target.value)}
@@ -92,8 +99,10 @@ export default function LeadTypesManager({ types, onChanged, onClose }: Props) {
                     <p className="truncate text-sm font-semibold text-[#262a34]">{t.name}</p>
                     <p className="text-[11px] text-[#9297a2]">{t.leadCount} lead{t.leadCount === 1 ? "" : "s"}</p>
                   </div>
+                  {editable && t._id && <>
                   <button onClick={() => { setEditingId(t._id); setEditName(t.name); }} aria-label={`Edit ${t.name}`} className="rounded-lg p-2 text-[#4d5360] hover:bg-[#f5f6f8]"><Pencil size={15} /></button>
                   <button onClick={() => remove(t)} disabled={busy} aria-label={`Remove ${t.name}`} className="rounded-lg p-2 text-[#d64a42] hover:bg-[#fdeeee]"><Trash2 size={15} /></button>
+                  </>}
                 </>
               )}
             </div>

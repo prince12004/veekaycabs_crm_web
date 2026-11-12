@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, Users2, ListTodo, LogOut, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users2, ListTodo, LogOut, ShieldCheck, Archive, ChevronDown } from "lucide-react";
 import { getCrmUser, logout, type CrmSessionUser } from "@/lib/auth";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, superAdminOnly: false },
   { href: "/leads", label: "Leads", icon: ListTodo, superAdminOnly: false },
+  { href: "/lost-leads", label: "Lost Leads", icon: Archive, superAdminOnly: true },
   { href: "/salespersons", label: "Salespersons", icon: Users2, superAdminOnly: true },
 ];
 
@@ -18,6 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [user, setUser] = useState<CrmSessionUser | null>(null);
   const [checked, setChecked] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("crm_token") : null;
@@ -29,6 +31,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setUser(u);
     setChecked(true);
   }, [router]);
+
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   if (!checked) {
     return (
@@ -106,8 +110,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="hidden rounded-full border border-[#d9efe1] bg-[#f0faf3] px-3 py-1.5 text-[#28804a] sm:inline-flex sm:items-center sm:gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-[#32a85a]" /> Workspace active
             </span>
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-[#fff0e8] font-extrabold text-[#e6531c]">{initials}</div>
-            <span className="hidden max-w-[150px] truncate sm:block">{user?.name}</span>
+            {/* The sidebar (and its Sign out) is hidden on phones, so the account menu lives here too. */}
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className="flex items-center gap-2 rounded-full py-0.5 pl-0.5 pr-2 transition hover:bg-[#f5f6f8]"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-[#fff0e8] font-extrabold text-[#e6531c]">{initials}</span>
+                <span className="hidden max-w-[150px] truncate sm:block">{user?.name}</span>
+                <ChevronDown size={14} className={`transition ${menuOpen ? "rotate-180" : ""}`} />
+              </button>
+              {menuOpen && (
+                <>
+                  <button aria-label="Close menu" className="fixed inset-0 z-30 cursor-default" onClick={() => setMenuOpen(false)} />
+                  <div role="menu" className="absolute right-0 top-12 z-40 w-56 rounded-2xl border border-[#e9e3d8] bg-white p-2 shadow-[0_16px_38px_rgba(25,30,42,0.12)]">
+                    <div className="px-3 py-2">
+                      <p className="truncate text-sm font-bold text-[#20232d]">{user?.name}</p>
+                      <p className="truncate text-[11px] text-[#7d8390]">{user?.email}</p>
+                      <p className="mt-1 flex items-center gap-1 text-[11px] capitalize text-[#7d8390]"><ShieldCheck size={12} /> {user?.role?.replace("_", " ")}</p>
+                    </div>
+                    <button role="menuitem" onClick={logout}
+                      className="mt-1 flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#697080] transition-colors hover:bg-[#fff1e9] hover:text-[#db4d16]">
+                      <LogOut size={16} /> Sign out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
         <section className="dashboard-content min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-7 sm:py-7 lg:px-9">

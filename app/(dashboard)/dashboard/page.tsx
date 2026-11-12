@@ -8,7 +8,7 @@ import { getCrmUser } from "@/lib/auth";
 
 interface Stats {
   total: number; newLeads: number; contacted: number; interested: number;
-  followUpsDue: number; slaBreaches: number; booked: number; lost: number;
+  followUpsDue: number; slaBreaches: number; booked: number; lost: number | null;
 }
 
 export default function DashboardPage() {
@@ -19,15 +19,18 @@ export default function DashboardPage() {
     leadsApi.getStats().then(({ data }) => setStats(data.data)).catch(() => {});
   }, []);
 
+  // Each card opens the list its number counts.
   const tiles = [
-    { label: "Total leads", value: stats?.total, icon: Users, color: "#263248" },
-    { label: "New leads", value: stats?.newLeads, icon: UserPlus, color: "#e6531c" },
-    { label: "Contacted", value: stats?.contacted, icon: PhoneCall, color: "#3973c6" },
-    { label: "Interested", value: stats?.interested, icon: Heart, color: "#8461c9" },
-    { label: "Follow-ups due", value: stats?.followUpsDue, icon: CalendarClock, color: "#c27a1b" },
-    { label: "SLA breaches", value: stats?.slaBreaches, icon: AlertTriangle, color: "#d64a42" },
-    { label: "Bookings", value: stats?.booked, icon: CheckCircle2, color: "#31945c" },
-    { label: "Lost", value: stats?.lost, icon: XCircle, color: "#7e8490" },
+    { label: "Total leads", value: stats?.total, icon: Users, color: "#263248", href: "/leads" },
+    { label: "New leads", value: stats?.newLeads, icon: UserPlus, color: "#e6531c", href: "/leads?status=New" },
+    { label: "Contacted", value: stats?.contacted, icon: PhoneCall, color: "#3973c6", href: "/leads?contacted=true" },
+    { label: "Interested", value: stats?.interested, icon: Heart, color: "#8461c9", href: "/leads?status=Interested" },
+    { label: "Follow-ups due", value: stats?.followUpsDue, icon: CalendarClock, color: "#c27a1b", href: "/leads?followUpDue=true" },
+    { label: "SLA breaches", value: stats?.slaBreaches, icon: AlertTriangle, color: "#d64a42", href: "/leads?slaBreached=true" },
+    { label: "Bookings", value: stats?.booked, icon: CheckCircle2, color: "#31945c", href: "/leads?status=Booking%20Confirmed" },
+    ...(user?.role === "super_admin"
+      ? [{ label: "Lost", value: stats?.lost ?? undefined, icon: XCircle, color: "#7e8490", href: "/lost-leads" }]
+      : []),
   ];
 
   return (
@@ -73,8 +76,8 @@ export default function DashboardPage() {
           <p className="mt-1 text-xs text-[#858b97]">Current activity across your CRM</p>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {tiles.map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="group rounded-2xl border border-[#e7e9ed] bg-white p-5 shadow-[0_2px_8px_rgba(24,28,40,0.025)] transition hover:-translate-y-0.5 hover:border-[#f15a24]/35 hover:shadow-[0_12px_28px_rgba(24,28,40,0.07)]">
+          {tiles.map(({ label, value, icon: Icon, color, href }) => (
+            <Link key={label} href={href} className="group block rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-[#f15a24]/20 border border-[#e7e9ed] bg-white p-5 shadow-[0_2px_8px_rgba(24,28,40,0.025)] transition hover:-translate-y-0.5 hover:border-[#f15a24]/35 hover:shadow-[0_12px_28px_rgba(24,28,40,0.07)]">
               <div className="flex items-start justify-between">
                 <p className="text-xs font-bold text-[#777d89]">{label}</p>
                 <span className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: `${color}14` }}>
@@ -85,7 +88,10 @@ export default function DashboardPage() {
               <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#f0f1f3]">
                 <div className="h-full w-1/3 rounded-full" style={{ backgroundColor: color }} />
               </div>
-            </div>
+              <p className="mt-3 flex items-center gap-1 text-[11px] font-bold text-[#9096a2] transition group-hover:text-[#dc4e1b]">
+                View <ArrowUpRight size={12} />
+              </p>
+            </Link>
           ))}
         </div>
       </div>

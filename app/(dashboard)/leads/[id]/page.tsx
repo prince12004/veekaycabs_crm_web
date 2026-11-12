@@ -4,24 +4,10 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Phone, MessageCircle, StickyNote, Loader2, Clock, User as UserIcon } from "lucide-react";
 import toast from "react-hot-toast";
-import { leadsApi, usersApi } from "@/lib/api";
+import { leadsApi, leadTypesApi, usersApi } from "@/lib/api";
 import { getCrmUser } from "@/lib/auth";
-
-const STATUSES = [
-  "New", "Assigned", "Contacted", "Interested", "Follow-up", "Quotation Sent",
-  "Booking Pending", "Booking Confirmed", "No Response", "Not Interested",
-  "Wrong Number", "Duplicate", "Invalid Lead", "Customer Issue", "Price Issue",
-  "Payment Issue", "Service Issue", "Service Unavailable", "Other Issue",
-  "Lost", "Cancelled",
-];
-// Mirrors crm/server Lead.ESCALATION_STATUSES — a salesperson picking one of
-// these sends the lead to Super Admin for review.
-const ESCALATION = [
-  "Not Interested", "Customer Issue", "Price Issue", "Payment Issue",
-  "Service Issue", "Service Unavailable", "Other Issue",
-];
-const SUPER_ADMIN_REVIEW = [...ESCALATION, "Interested"];
-const REASON_REQUIRED = [...ESCALATION, "Lost"];
+import { ACTIVE_STATUSES, REASON_REQUIRED, SUPER_ADMIN_REVIEW } from "@/lib/leadOptions";
+import LeadTypeSelect from "@/components/LeadTypeSelect";
 
 interface SalespersonOption { _id: string; name: string; isActive: boolean; role: string; }
 
@@ -38,6 +24,7 @@ export default function LeadDetailPage() {
   const [noteText, setNoteText] = useState("");
   const [followUp, setFollowUp] = useState("");
   const [savingStatus, setSavingStatus] = useState(false);
+  const [leadTypes, setLeadTypes] = useState<string[]>([]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -56,6 +43,10 @@ export default function LeadDetailPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
+    leadTypesApi.getAll().then(({ data }) => setLeadTypes((data.data || []).map((t: { name: string }) => t.name))).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (user?.role === "super_admin") {
       usersApi.getAll().then(({ data }) => setSalespersons(data.data.filter((u: any) => u.role === "salesperson"))).catch(() => {});
     }
@@ -70,6 +61,12 @@ export default function LeadDetailPage() {
     setSavingStatus(true);
     try {
       const { data } = await leadsApi.update(id, { status: newStatus, reason });
+      // A lost lead moves to the Super Admin's Lost Leads section.
+      if (newStatus === "Lost") {
+        toast.success("Lead moved to Lost Leads");
+        router.push(user?.role === "super_admin" ? "/lost-leads" : "/leads");
+        return;
+      }
       // The server has just moved the lead to Super Admin, so a
       // salesperson can no longer open it — go back to their list instead.
       if (user?.role !== "super_admin" && SUPER_ADMIN_REVIEW.includes(newStatus)) {
@@ -129,13 +126,22 @@ export default function LeadDetailPage() {
     return <div className="flex items-center justify-center py-20"><Loader2 size={24} className="animate-spin text-[#E8540A]" /></div>;
   }
 
+  const isLost = lead.status === "Lost";
+  // An older status stays visible on the lead it's on, but can't be picked again.
+  const statusOptions = ACTIVE_STATUSES.includes(lead.status) ? ACTIVE_STATUSES : [lead.status, ...ACTIVE_STATUSES];
   const slaActive = lead.assignedTo && !lead.firstActionAt && lead.status !== "Booking Confirmed" && ![...SUPER_ADMIN_REVIEW, "Lost", "Cancelled"].includes(lead.status);
 
   return (
     <div className="crm-detail-theme mx-auto min-h-full w-full max-w-none space-y-5 pb-20 lg:pb-2">
-      <button onClick={() => router.push("/leads")} className="flex items-center gap-1.5 text-sm text-[#4A4A6A] hover:text-[#E8540A]">
-        <ArrowLeft size={15} /> Back to Leads
+      <button onClick={() => router.push(isLost ? "/lost-leads" : "/leads")} className="flex items-center gap-1.5 text-sm text-[#4A4A6A] hover:text-[#E8540A]">
+        <ArrowLeft size={15} /> {isLost ? "Back to Lost Leads" : "Back to Leads"}
       </button>
+
+      {isLost && (
+        <div className="rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-5 py-3 text-sm text-[#991B1B]">
+          <span className="font-bold">Lost lead.</span> {lead.reason ? `Reason: ${lead.reason}. ` : ""}Pick another status to bring it back to the leads list.
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-[#E4E5EF] p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -143,7 +149,7 @@ export default function LeadDetailPage() {
           <h1 className="text-xl font-black text-[#0F0F1A]">{lead.name}</h1>
           <p className="text-[#4A4A6A] text-sm">{lead.mobile} {lead.email ? `· ${lead.email}` : ""}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {slaActive && lead.slaDeadline && (
             <div className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-[#FEF3C7] text-[#92400E]">
               <Clock size={12} /> SLA due {new Date(lead.slaDeadline).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
@@ -151,7 +157,7 @@ export default function LeadDetailPage() {
           )}
           <select value={lead.status} disabled={savingStatus} onChange={(e) => handleStatusChange(e.target.value)}
             className="border-[1.5px] border-[#E4E5EF] focus:border-[#E8540A] rounded-xl px-3 py-2 text-sm font-semibold outline-none bg-white">
-            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            {statusOptions.map((s) => <option key={s} value={s} disabled={!ACTIVE_STATUSES.includes(s)}>{s}</option>)}
           </select>
         </div>
       </div>
@@ -160,9 +166,19 @@ export default function LeadDetailPage() {
         <div className="md:col-span-2 space-y-5">
           <div className="bg-white rounded-2xl border border-[#E4E5EF] p-5">
             <h3 className="font-bold text-[#0F0F1A] text-sm mb-4">Trip Details</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
               <div><p className="text-[#9090A8] text-xs">Source</p><p className="font-semibold text-[#0F0F1A]">{lead.source}</p></div>
               <div><p className="text-[#9090A8] text-xs">Priority</p><p className="font-semibold text-[#0F0F1A]">{lead.priority}</p></div>
+              <div>
+                <p className="text-[#9090A8] text-xs">Lead Type</p>
+                <LeadTypeSelect
+                  leadId={lead._id}
+                  value={lead.leadType}
+                  types={leadTypes}
+                  onSaved={(leadType) => setLead((l: any) => ({ ...l, leadType }))}
+                  className="-ml-2 mt-0.5 w-full max-w-[220px] rounded-lg border border-[#E4E5EF] bg-white px-2 py-1 text-sm font-semibold text-[#0F0F1A] outline-none focus:border-[#E8540A]"
+                />
+              </div>
               {(lead.utm?.campaign || lead.utm?.term) && (
                 <div><p className="text-[#9090A8] text-xs">Campaign / Keyword</p><p className="font-semibold text-[#0F0F1A]">{[lead.utm.campaign, lead.utm.term].filter(Boolean).join(" · ")}</p></div>
               )}
@@ -176,7 +192,7 @@ export default function LeadDetailPage() {
 
           <div className="bg-white rounded-2xl border border-[#E4E5EF] p-5">
             <h3 className="font-bold text-[#0F0F1A] text-sm mb-4">Quick Actions</h3>
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
               <button onClick={() => handleActivity("call")} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#D1FAE5] text-[#065F46] text-xs font-bold">
                 <Phone size={13} /> Log Call
               </button>

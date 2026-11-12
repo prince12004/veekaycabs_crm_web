@@ -36,9 +36,17 @@ export const usersApi = {
   toggle: (id: string) => api.patch(`/api/users/${id}/toggle`),
 };
 
+export const leadTypesApi = {
+  getAll: () => api.get("/api/lead-types"),
+  create: (name: string) => api.post("/api/lead-types", { name }),
+  update: (id: string, name: string) => api.put(`/api/lead-types/${id}`, { name }),
+  remove: (id: string) => api.delete(`/api/lead-types/${id}`),
+};
+
 export const leadsApi = {
   getAll: (params?: Record<string, string | number>) => api.get("/api/leads", { params }),
   getStats: () => api.get("/api/leads/stats"),
+  getLost: (params?: Record<string, string | number>) => api.get("/api/leads/lost", { params }),
   getById: (id: string) => api.get(`/api/leads/${id}`),
   create: (data: Record<string, unknown>) => api.post("/api/leads", data),
   update: (id: string, data: Record<string, unknown>) => api.put(`/api/leads/${id}`, data),

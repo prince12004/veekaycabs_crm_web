@@ -13,10 +13,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("crm_token")) {
       router.replace("/dashboard");
+      return;
+    }
+    const reason = sessionStorage.getItem("crm_signout_reason");
+    if (reason) {
+      setNotice(reason);
+      sessionStorage.removeItem("crm_signout_reason");
     }
   }, [router]);
 
@@ -72,6 +79,9 @@ export default function LoginPage() {
               <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#e6531c]">Team sign in</span>
               <h2 className="mt-2 text-[30px] font-black tracking-tight text-[#191b23]">Welcome back</h2>
               <p className="mt-2 text-sm leading-6 text-[#747987]">Sign in to continue to the Veekay CRM workspace.</p>
+              {notice && (
+                <p role="status" className="mt-4 rounded-xl border border-[#fde2b8] bg-[#fff8ec] px-3.5 py-2.5 text-xs leading-5 text-[#8a5a12]">{notice}</p>
+              )}
             </div>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>

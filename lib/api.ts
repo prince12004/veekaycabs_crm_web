@@ -21,6 +21,8 @@ api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error?.response?.status === 401 && typeof window !== "undefined") {
+      const message = error?.response?.data?.message;
+      if (message && localStorage.getItem("crm_token")) sessionStorage.setItem("crm_signout_reason", message);
       localStorage.removeItem("crm_token");
       localStorage.removeItem("crm_user");
       if (window.location.pathname !== "/login") window.location.href = "/login";
@@ -32,6 +34,13 @@ api.interceptors.response.use(
 export const authApi = {
   login: (email: string, password: string) => api.post("/api/auth/login", { email, password }),
   me: () => api.get("/api/auth/me"),
+  logout: (reason?: "inactive") => api.post("/api/auth/logout", { reason }),
+};
+
+export const presenceApi = {
+  heartbeat: (active: boolean) => api.post("/api/presence/heartbeat", { active }),
+  setAvailability: (availability: "available" | "busy") => api.patch("/api/presence/availability", { availability }),
+  getTeam: () => api.get("/api/presence/team"),
 };
 
 export const usersApi = {

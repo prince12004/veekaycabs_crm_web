@@ -4,13 +4,16 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, Users2, ListTodo, LogOut, ShieldCheck, Archive, ChevronDown } from "lucide-react";
+import { LayoutDashboard, Users2, ListTodo, LogOut, ShieldCheck, Archive, ChevronDown, Activity } from "lucide-react";
 import { getCrmUser, logout, type CrmSessionUser } from "@/lib/auth";
+import PresenceTracker from "@/components/PresenceTracker";
+import AvailabilityToggle from "@/components/AvailabilityToggle";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, superAdminOnly: false },
   { href: "/leads", label: "Leads", icon: ListTodo, superAdminOnly: false },
   { href: "/lost-leads", label: "Lost Leads", icon: Archive, superAdminOnly: true },
+  { href: "/team-activity", label: "Team Activity", icon: Activity, superAdminOnly: true },
   { href: "/salespersons", label: "Salespersons", icon: Users2, superAdminOnly: true },
 ];
 
@@ -48,6 +51,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-[100dvh] min-h-0 overflow-hidden bg-[#f5f2eb]">
+      {user?.role === "salesperson" && <PresenceTracker />}
       <aside className="hidden h-full w-[260px] shrink-0 flex-col border-r border-[#e9e3d8] bg-[#fffefa] lg:flex">
         <Link href="/dashboard" className="flex h-[88px] items-center border-b border-[#eee8dd] px-6">
           <Image src="/logo.png" alt="Veekay Cabs" width={497} height={91} priority className="h-auto w-[190px]" />
@@ -86,7 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
           <button
-            onClick={logout}
+            onClick={() => logout()}
             className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#697080] transition-colors hover:bg-[#fff1e9] hover:text-[#db4d16]"
           >
             <LogOut size={16} /> Sign out
@@ -107,9 +111,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
           <div className="flex items-center gap-2.5 text-xs font-semibold text-[#697080] sm:gap-3">
-            <span className="hidden rounded-full border border-[#d9efe1] bg-[#f0faf3] px-3 py-1.5 text-[#28804a] sm:inline-flex sm:items-center sm:gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#32a85a]" /> Workspace active
-            </span>
+            {user?.role === "salesperson" ? (
+              <AvailabilityToggle />
+            ) : (
+              <span className="hidden rounded-full border border-[#d9efe1] bg-[#f0faf3] px-3 py-1.5 text-[#28804a] sm:inline-flex sm:items-center sm:gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#32a85a]" /> Workspace active
+              </span>
+            )}
             {/* The sidebar (and its Sign out) is hidden on phones, so the account menu lives here too. */}
             <div className="relative">
               <button
@@ -131,7 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <p className="truncate text-[11px] text-[#7d8390]">{user?.email}</p>
                       <p className="mt-1 flex items-center gap-1 text-[11px] capitalize text-[#7d8390]"><ShieldCheck size={12} /> {user?.role?.replace("_", " ")}</p>
                     </div>
-                    <button role="menuitem" onClick={logout}
+                    <button role="menuitem" onClick={() => logout()}
                       className="mt-1 flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#697080] transition-colors hover:bg-[#fff1e9] hover:text-[#db4d16]">
                       <LogOut size={16} /> Sign out
                     </button>

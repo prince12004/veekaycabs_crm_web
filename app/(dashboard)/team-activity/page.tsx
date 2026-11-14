@@ -16,7 +16,7 @@ interface Member {
 }
 interface TeamResponse {
   data: Member[]; nextSalesperson: { _id: string; name: string } | null;
-  waitingLeads: number; idleLogoutMinutes: number; serverTime: string;
+  waitingLeads: number; idleLogoutMinutes: number; missedWindowDays?: number; serverTime: string;
 }
 
 const STATUS: Record<Status, { label: string; bg: string; text: string; dot: string }> = {
@@ -174,7 +174,7 @@ export default function TeamActivityPage() {
                     <th className="px-4 py-3 text-right">Pending</th>
                     <th className="px-4 py-3 text-right">Contacted</th>
                     <th className="px-4 py-3 text-right">Converted</th>
-                    <th className="px-4 py-3 text-right">Missed</th>
+                    <th className="px-4 py-3 text-right whitespace-nowrap">Missed ({team.missedWindowDays ?? 7}d)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -208,7 +208,7 @@ export default function TeamActivityPage() {
       </div>
 
       <p className="text-xs leading-5 text-[#858b97]">
-        <span className="font-bold">Pending</span> = assigned but not yet called or messaged · <span className="font-bold">Converted</span> = Booking Confirmed · <span className="font-bold">Missed</span> = leads taken away after the SLA ran out.
+        <span className="font-bold">Pending</span> = assigned but not yet called or messaged · <span className="font-bold">Converted</span> = Booking Confirmed · <span className="font-bold">Missed</span> = different leads whose SLA ran out with them in the last {team?.missedWindowDays ?? 7} days and were moved on.
       </p>
     </div>
   );

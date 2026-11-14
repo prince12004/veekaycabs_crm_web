@@ -28,7 +28,7 @@ const STATUS: Record<Status, { label: string; bg: string; text: string; dot: str
 };
 const ORDER: Status[] = ["active", "busy", "inactive", "logged_out", "disabled"];
 const REASONS: Record<string, string> = {
-  inactive: "inactive", closed: "closed the CRM", manual: "signed out", deactivated: "deactivated",
+  inactive: "inactive", closed: "closed the CRM", manual: "signed out", deactivated: "deactivated", password_reset: "password reset",
 };
 
 const ago = (iso: string | null, now: number) => {

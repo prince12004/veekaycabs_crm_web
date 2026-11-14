@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, Loader2, Power } from "lucide-react";
+import { Plus, X, Loader2, Power, KeyRound, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import { usersApi } from "@/lib/api";
 import { getCrmUser } from "@/lib/auth";
@@ -19,6 +19,11 @@ export default function SalespersonsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", mobile: "", password: "", role: "salesperson" });
   const [submitting, setSubmitting] = useState(false);
+  const [resetFor, setResetFor] = useState<CrmUserRow | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -44,6 +49,28 @@ export default function SalespersonsPage() {
       toast.error(err?.response?.data?.message || "Failed to create user");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openReset = (u: CrmUserRow) => {
+    setResetFor(u); setNewPassword(""); setConfirmPassword(""); setShowNew(false);
+  };
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetFor) return;
+    if (newPassword.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (newPassword !== confirmPassword) { toast.error("Passwords don't match"); return; }
+    setResetting(true);
+    try {
+      await usersApi.update(resetFor._id, { password: newPassword });
+      toast.success(`Password reset for ${resetFor.name}`);
+      setResetFor(null);
+      load();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to reset password");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -100,9 +127,14 @@ export default function SalespersonsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <button onClick={() => handleToggle(u._id)} className="flex items-center gap-1 text-xs font-semibold text-[#4A4A6A] hover:text-[#E8540A]">
-                      <Power size={13} /> {u.isActive ? "Deactivate" : "Activate"}
-                    </button>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                      <button onClick={() => openReset(u)} className="flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-[#4A4A6A] hover:text-[#E8540A]">
+                        <KeyRound size={13} /> Reset password
+                      </button>
+                      <button onClick={() => handleToggle(u._id)} className="flex items-center gap-1 text-xs font-semibold text-[#4A4A6A] hover:text-[#E8540A]">
+                        <Power size={13} /> {u.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -138,6 +170,36 @@ export default function SalespersonsPage() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {resetFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <form onSubmit={handleReset} className="w-full max-w-md space-y-3 rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-[#0F0F1A]">Reset password</h3>
+                <p className="text-xs text-[#858b97]">{resetFor.name} · {resetFor.email}</p>
+              </div>
+              <button type="button" onClick={() => setResetFor(null)} aria-label="Close" className="text-[#9090A8] hover:text-[#0F0F1A]"><X size={20} /></button>
+            </div>
+            <div className="relative">
+              <input autoFocus required minLength={8} type={showNew ? "text" : "password"} autoComplete="new-password" placeholder="New password (min 8 characters)"
+                value={newPassword} onChange={(e) => setNewPassword(e.target.value)} aria-label="New password"
+                className="w-full rounded-xl border-[1.5px] border-[#E4E5EF] px-3 py-2.5 pr-11 text-sm outline-none focus:border-[#E8540A]" />
+              <button type="button" onClick={() => setShowNew((v) => !v)} aria-label={showNew ? "Hide password" : "Show password"}
+                className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-[#9ba0ab] hover:bg-[#f5f6f8]">
+                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <input required type={showNew ? "text" : "password"} autoComplete="new-password" placeholder="Confirm new password"
+              value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} aria-label="Confirm new password"
+              className="w-full rounded-xl border-[1.5px] border-[#E4E5EF] px-3 py-2.5 text-sm outline-none focus:border-[#E8540A]" />
+            <p className="text-xs leading-5 text-[#858b97]">They&apos;ll be signed out everywhere and must sign in with the new password. Share it with them directly.</p>
+            <button type="submit" disabled={resetting} className="w-full rounded-xl bg-[#E8540A] py-3 text-sm font-bold text-white hover:bg-[#c94508] disabled:opacity-60">
+              {resetting ? "Saving..." : "Reset password"}
+            </button>
+          </form>
         </div>
       )}
     </div>
